@@ -43,19 +43,11 @@ class SchemaGenerator:
     
     def generate_llm(self, system_design: Dict) -> Dict:
         try:
-            from pipeline.llm import call_llm_with_review
+            from pipeline.llm import call_llm
             entity_names = [e.get("name") for e in system_design.get("entities", [])]
-            roles = system_design.get("roles", [])
-            pages = system_design.get("pages", [])
             
-            messages = [{"role": "user", "content": f"Generate schemas for: {entity_names}"}]
-            
-            raw, was_reviewed = call_llm_with_review(
-                messages,
-                system=SCHEMA_GENERATION_PROMPT,
-                review_task="Ensure db tables have fields, api has CRUD endpoints, ui has pages and routing"
-            )
-            logger.info(f"Schema: reviewed={was_reviewed}")
+            messages = [{"role": "user", "content": f"Generate DB/API/UI/Auth schemas for: {entity_names}"}]
+            raw = call_llm(messages, system=SCHEMA_GENERATION_PROMPT, temperature=0.05, model_tier="fast")
             return self._parse_and_save(raw)
         except Exception as e:
             logger.warning(f"LLM schema failed: {e}, using rule-based")

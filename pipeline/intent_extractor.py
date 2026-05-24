@@ -16,17 +16,17 @@ INTENT_SCHEMA = {
     }
 }
 
-INTENT_PROMPT = """Extract intent from: {prompt}
+INTENT_PROMPT = """Extract app intent from user request.
 
-Respond with ONLY this JSON (no markdown):
-{"app_name":"Name","app_type":"crm|ecommerce|saas|dashboard|marketplace|custom","features":["Feature1","Feature2"],"entities":["entity1","entity2"],"roles":["admin","user"],"integrations":[],"ambiguities":[],"assumptions":[]}
+Output ONLY valid JSON (no markdown):
+{"app_name":"Name","app_type":"crm|ecommerce|saas|dashboard|marketplace|custom","features":["Feature1"],"entities":["entity1"],"roles":["admin","user"],"integrations":[],"ambiguities":[],"assumptions":[]}
 
 Rules:
-- features: max 10 items, be specific
-- entities: data objects (user, product, order, etc)
+- features: max 10 items, be specific (e.g. "User Authentication" not just "auth")
+- entities: data objects plural (users, products, orders)
 - roles: user roles (admin, customer, vendor, etc)
-- app_type: choose one from list
-- integrations: Stripe, SendGrid, Auth0, etc"""
+- app_type: choose one
+- integrations: external services (Stripe, SendGrid, Auth0)
 
 class IntentExtractor:
     def __init__(self):
@@ -49,24 +49,14 @@ class IntentExtractor:
     
     def extract_llm(self, prompt: str) -> Dict:
         try:
-            from pipeline.llm import call_llm_with_review
-            
-            task = f"Extract app intent from user request: {prompt}"
-            
-            system_msg = INTENT_PROMPT.replace("{prompt}", prompt)
+            from pipeline.llm import call_llm
             
             messages = [{"role": "user", "content": f"Extract intent:\n\n{prompt}"}]
             
-            raw, was_reviewed = call_llm_with_review(
-                messages,
-                system=system_msg,
-                review_task="Ensure all required fields present, fix types, dedupe arrays"
-            )
-            
-            logger.info(f"Intent extraction: reviewed={was_reviewed}")
+            raw = call_llm(messages, system=INTENT_PROMPT, temperature=0.05, model_tier="fast", max_tokens=1024)
             return self._parse_and_repair(raw)
         except Exception as e:
-            logger.warning(f"LLM failed: {e}, using rule-based")
+            logger.warning(f"LLM extraction failed: {e}, using rule-based")
             return self.extract_rule_based(prompt)
     
     def _parse_and_repair(self, raw: str) -> Dict:
