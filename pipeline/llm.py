@@ -53,7 +53,7 @@ def call_llm(
             completion = _get_client().chat.completions.create(
                 model=model,
                 messages=full_messages,
-                temperature=max(temperature, 0.01),
+                temperature=max(temperature, 0.02),
                 top_p=0.9,
                 max_tokens=tokens,
                 stream=True
