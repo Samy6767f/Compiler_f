@@ -79,7 +79,7 @@ class SystemDesigner:
         try:
             from pipeline.llm import call_llm
             messages = [{"role": "user", "content": f"Design system:\n{json.dumps(intent, indent=2)}"}]
-            raw = call_llm(messages, system=SYSTEM_DESIGN_PROMPT, temperature=0.1)
+            raw = call_llm(messages, system=SYSTEM_DESIGN_PROMPT, temperature=0.1, model_tier="medium")
             return self._parse_and_validate(raw)
         except Exception as e:
             return self.design_rule_based(intent)

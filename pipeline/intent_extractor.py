@@ -53,7 +53,7 @@ class IntentExtractor:
         try:
             from pipeline.llm import call_llm
             messages = [{"role": "user", "content": f"Extract intent:\n\n{prompt}"}]
-            raw = call_llm(messages, system=INTENT_PROMPT, temperature=0.1)
+            raw = call_llm(messages, system=INTENT_PROMPT, temperature=0.1, model_tier="fast")
             return self._parse_and_repair(raw)
         except Exception as e:
             return self.extract_rule_based(prompt)
