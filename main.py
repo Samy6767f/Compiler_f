@@ -20,22 +20,7 @@ app.add_middleware(
 )
 
 pipeline = Pipeline(use_llm=False)
-
-class CompileRequest(BaseModel):
-    prompt: str
-    use_llm: bool = False
-
-class CompileResponse(BaseModel):
-    success: bool
-    request_id: str
-    intent: dict
-    design: dict
-    schemas: dict
-    validation: dict
-    simulation_result: dict
-    metrics: dict
-    latency_ms: float
-    stage_errors: list
+pipeline_llm = Pipeline(use_llm=True)
 
 @app.get("/")
 async def root():
@@ -43,9 +28,10 @@ async def root():
 
 @app.post("/compile", response_model=CompileResponse)
 async def compile_app(request: CompileRequest):
-    logger.info(f"Compile request: {request.prompt[:100]}...")
+    logger.info(f"Compile request: {request.prompt[:100]}... use_llm={request.use_llm}")
     try:
-        result = pipeline.compile(request.prompt)
+        p = pipeline_llm if request.use_llm else pipeline
+        result = p.compile(request.prompt)
         return CompileResponse(**result)
     except Exception as e:
         logger.error(f"Compile failed: {e}")
