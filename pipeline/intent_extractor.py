@@ -26,7 +26,7 @@ Rules:
 - entities: data objects plural (users, products, orders)
 - roles: user roles (admin, customer, vendor, etc)
 - app_type: choose one
-- integrations: external services (Stripe, SendGrid, Auth0)
+- integrations: external services (Stripe, SendGrid, Auth0)"""
 
 class IntentExtractor:
     def __init__(self):
