@@ -22,6 +22,22 @@ app.add_middleware(
 pipeline = Pipeline(use_llm=False)
 pipeline_llm = Pipeline(use_llm=True)
 
+class CompileRequest(BaseModel):
+    prompt: str
+    use_llm: bool = False
+
+class CompileResponse(BaseModel):
+    success: bool
+    request_id: str
+    intent: dict
+    design: dict
+    schemas: dict
+    validation: dict
+    simulation_result: dict
+    metrics: dict
+    latency_ms: float
+    stage_errors: list
+
 @app.get("/")
 async def root():
     return FileResponse("www/index.html")
