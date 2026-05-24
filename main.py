@@ -18,11 +18,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-pipeline = Pipeline(use_llm=True)
+pipeline = Pipeline(use_llm=False)
 
 class CompileRequest(BaseModel):
     prompt: str
-    use_llm: bool = True
+    use_llm: bool = False
 
 class CompileResponse(BaseModel):
     success: bool

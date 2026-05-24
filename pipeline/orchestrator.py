@@ -32,7 +32,7 @@ class Pipeline:
         
         try:
             logger.info(f"[{request_id}] Stage 1: Extracting intent")
-            intent = self.intent_extractor.extract(prompt)
+            intent = self.intent_extractor.extract(prompt) if self.use_llm else self.intent_extractor.extract_rule_based(prompt)
             self.results["intent"] = intent
             self.metrics.record_stage(request_id, "intent_extraction")
         except Exception as e:
@@ -42,7 +42,7 @@ class Pipeline:
         
         try:
             logger.info(f"[{request_id}] Stage 2: Designing system")
-            design = self.system_designer.design(intent)
+            design = self.system_designer.design(intent) if self.use_llm else self.system_designer.design_rule_based(intent)
             self.results["design"] = design
             self.metrics.record_stage(request_id, "system_design")
         except Exception as e:
@@ -52,7 +52,7 @@ class Pipeline:
         
         try:
             logger.info(f"[{request_id}] Stage 3: Generating schemas")
-            schemas = self.schema_generator.generate(design)
+            schemas = self.schema_generator.generate(design) if self.use_llm else self.schema_generator.generate_rule_based(design)
             self.results["schemas"] = schemas
             self.metrics.record_stage(request_id, "schema_generation")
         except Exception as e:
