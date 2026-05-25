@@ -10,7 +10,7 @@ NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
 MODELS = {
-    "grok": "llama-3.3-70b-versatile",
+    "generation": "llama-3.3-70b-versatile",
     "review": "qwen/qwen3-32b"
 }
 
@@ -35,13 +35,13 @@ def _get_groq_client():
         _groq_client = OpenAI(base_url=GROQ_BASE_URL, api_key=GROQ_API_KEY)
     return _groq_client
 
-def generate_with_grok(
+def generate_with_llama(
     prompt: str,
     system_message: str,
     max_tokens: int = 8192
 ) -> str:
-    """Generate using Groq model - fast generation"""
-    model = MODELS["grok"]
+    """Generate using Groq Llama model - fast generation"""
+    model = MODELS["generation"]
     
     messages = [
         {"role": "system", "content": system_message},
@@ -59,18 +59,18 @@ def generate_with_grok(
             max_tokens=max_tokens
         )
         result = completion.choices[0].message.content
-        logger.info(f"Grok generation: {len(result)} chars in {time.time()-t0:.1f}s")
+        logger.info(f"Llama generation: {len(result)} chars in {time.time()-t0:.1f}s")
         return result
     except Exception as e:
-        logger.error(f"Grok generation failed: {e}")
+        logger.error(f"Llama generation failed: {e}")
         raise
 
-def review_with_minimax(
+def review_with_model(
     draft: str,
     review_task: str,
     max_tokens: int = 8192
 ) -> Tuple[str, bool]:
-    """MiniMax reviews and fixes the draft JSON - fast ~10-30s"""
+    """Qwen reviews and fixes the draft JSON on NVIDIA - fast ~10-30s"""
     model = MODELS["review"]
     
     review_system = f"""You are a JSON corrector. Fix ONLY errors, keep correct parts AS-IS.
@@ -99,10 +99,10 @@ Respond with ONLY corrected JSON:"""
         corrected = completion.choices[0].message.content
         corrected = repair_json(corrected)
         was_fixed = corrected.strip() != draft.strip()
-        logger.info(f"MiniMax review: {len(corrected)} chars in {time.time()-t0:.1f}s, was_fixed={was_fixed}")
+        logger.info(f"Qwen review: {len(corrected)} chars in {time.time()-t0:.1f}s, was_fixed={was_fixed}")
         return corrected, was_fixed
     except Exception as e:
-        logger.warning(f"MiniMax review failed: {e}")
+        logger.warning(f"Qwen review failed: {e}")
         return draft, False
 
 def repair_json(text: str) -> str:
