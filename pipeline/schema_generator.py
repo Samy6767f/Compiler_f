@@ -94,6 +94,7 @@ class SchemaGenerator:
         for entity in entities:
             name = entity.get("name", "Unknown")
             fields = entity.get("fields", [])
+            relations = entity.get("relations", [])
             
             table_fields = {}
             for field in fields:
@@ -107,6 +108,13 @@ class SchemaGenerator:
             
             schemas["db"]["tables"][name] = {"fields": table_fields}
             
+            entity_roles = []
+            for role in roles:
+                rn = role.get("name", "")
+                perms = role.get("permissions", [])
+                if any(p in perms or "admin" in perms for p in ["create", "read", "update"]):
+                    entity_roles.append(rn)
+
             lower_name = name.lower()
             if lower_name.endswith("s"):
                 plural = lower_name
@@ -114,13 +122,26 @@ class SchemaGenerator:
                 plural = lower_name[:-1] + "ies"
             else:
                 plural = lower_name + "s"
+            
+            read_roles = entity_roles if entity_roles else ["user", "admin"]
+            write_roles = ["admin"] if "admin" in [r.get("name") for r in roles] else entity_roles
+
             schemas["api"]["endpoints"].extend([
-                {"path": f"/{plural}", "method": "GET", "roles": ["user", "admin"], "table": name},
-                {"path": f"/{plural}", "method": "POST", "roles": ["admin"], "table": name},
-                {"path": f"/{plural}/{{id}}", "method": "GET", "roles": ["user", "admin"], "table": name},
-                {"path": f"/{plural}/{{id}}", "method": "PUT", "roles": ["admin"], "table": name},
+                {"path": f"/{plural}", "method": "GET", "roles": read_roles, "table": name},
+                {"path": f"/{plural}", "method": "POST", "roles": write_roles, "table": name},
+                {"path": f"/{plural}/{{id}}", "method": "GET", "roles": read_roles, "table": name},
+                {"path": f"/{plural}/{{id}}", "method": "PUT", "roles": write_roles, "table": name},
                 {"path": f"/{plural}/{{id}}", "method": "DELETE", "roles": ["admin"], "table": name}
             ])
+            
+            if relations:
+                for rel in relations:
+                    schemas["db"]["relationships"].append({
+                        "from": name,
+                        "to": rel.get("target", ""),
+                        "type": rel.get("type", "many-to-one"),
+                        "foreign_key": rel.get("foreign_key", "")
+                    })
         
         for role in roles:
             role_name = role.get("name", "user")

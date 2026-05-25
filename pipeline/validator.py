@@ -164,7 +164,26 @@ class Validator:
         ui = schemas.get("ui", {})
         if ui and not ui.get("routing"):
             errors.append("UI routing is empty - should have routes for all pages")
-        
+
+        auth_roles = set(schemas.get("auth", {}).get("roles", {}).keys())
+        ui_routes = schemas.get("ui", {}).get("routing", {})
+        undefined_roles = set()
+        for route, config in ui_routes.items():
+            for role in config.get("allowed_roles", []):
+                if role not in auth_roles and role not in ("guest", "user"):
+                    undefined_roles.add(role)
+        if undefined_roles:
+            errors.append(f"UI routes reference undefined auth roles: {undefined_roles}")
+
+        api_endpoints = schemas.get("api", {}).get("endpoints", [])
+        undefined_api_roles = set()
+        for ep in api_endpoints:
+            for role in ep.get("roles", []):
+                if role not in auth_roles and role not in ("guest", "user"):
+                    undefined_api_roles.add(role)
+        if undefined_api_roles:
+            errors.append(f"API endpoints reference undefined auth roles: {undefined_api_roles}")
+
         design = schemas.get("design", {}) if "design" in schemas else {}
         features = design.get("features", []) + schemas.get("intent", {}).get("features", []) if "intent" in schemas else design.get("features", [])
         features_lower = [f.lower() for f in features] if features else []

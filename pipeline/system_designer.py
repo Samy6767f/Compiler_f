@@ -137,14 +137,31 @@ class SystemDesigner:
             'orders': ['id:uuid', 'customer_id:uuid', 'total:float', 'status:enum', 'created_at:timestamp'],
             'payments': ['id:uuid', 'order_id:uuid', 'amount:float', 'method:string', 'status:enum', 'created_at:timestamp'],
             'invoices': ['id:uuid', 'order_id:uuid', 'amount:float', 'status:enum', 'due_date:timestamp', 'created_at:timestamp'],
+            'clinics': ['id:uuid', 'name:string', 'address:string', 'created_at:timestamp'],
+            'doctors': ['id:uuid', 'name:string', 'specialty:string', 'clinic_id:uuid', 'created_at:timestamp'],
+            'patients': ['id:uuid', 'name:string', 'email:string', 'phone:string', 'clinic_id:uuid', 'created_at:timestamp'],
+            'medical_records': ['id:uuid', 'patient_id:uuid', 'doctor_id:uuid', 'diagnosis:text', 'created_at:timestamp'],
         }
+
+        has_multi_tenant = any('clinic' in e.lower() or 'tenant' in e.lower() for e in entity_names)
         
         for name in entity_names:
             fields = base_fields.get(name, ['id:uuid', 'name:string', 'created_at:timestamp'])
+            relations = []
+            
+            if has_multi_tenant and name.lower() not in ['clinics', 'tenants']:
+                relations.append({"target": "Clinics", "type": "many-to-one", "foreign_key": "clinic_id"})
+            
+            if name.lower() in ['doctors', 'patients', 'medical_records']:
+                if 'Doctors' not in entity_names and 'doctors' not in entity_names:
+                    relations.append({"target": "Doctors", "type": "many-to-one", "foreign_key": "doctor_id"})
+                if 'Patients' not in entity_names and 'patients' not in entity_names:
+                    relations.append({"target": "Patients", "type": "many-to-one", "foreign_key": "patient_id"})
+            
             entities.append({
                 "name": name.title(),
                 "fields": fields,
-                "relations": []
+                "relations": relations
             })
         
         if not entities:
@@ -199,9 +216,10 @@ class SystemDesigner:
         return flows
     
     def _design_pages(self, entities: List[Dict], roles: List[Dict]) -> List[Dict]:
+        role_names = [r["name"] for r in roles]
         pages = [
             {"name": "Login", "route": "/login", "allowed_roles": ["guest"], "components": ["Form"]},
-            {"name": "Dashboard", "route": "/dashboard", "allowed_roles": ["user", "admin"], "components": ["StatsCard", "Table"]}
+            {"name": "Dashboard", "route": "/dashboard", "allowed_roles": role_names if role_names else ["user"], "components": ["StatsCard", "Table"]}
         ]
         
         for entity in entities:
@@ -216,13 +234,13 @@ class SystemDesigner:
             pages.append({
                 "name": f"{entity_name} List",
                 "route": f"/{plural}",
-                "allowed_roles": ["user", "admin"],
+                "allowed_roles": role_names if role_names else ["user", "admin"],
                 "components": ["Table", "SearchInput", "CreateButton"]
             })
             pages.append({
                 "name": f"{entity_name} Form",
                 "route": f"/{plural}/new",
-                "allowed_roles": ["user", "admin"],
+                "allowed_roles": role_names if "admin" in role_names else role_names,
                 "components": ["Form", "SubmitButton"]
             })
         
