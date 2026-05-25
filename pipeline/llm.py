@@ -10,8 +10,8 @@ NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
 MODELS = {
-    "generation": "llama-3.3-70b-versatile",
-    "review": "qwen/qwen3-32b"
+    "generation": "llama3-70b-8192",
+    "review": "minimaxai/minimax-m2.7"
 }
 
 MAX_RETRIES = 2
@@ -70,7 +70,7 @@ def review_with_model(
     review_task: str,
     max_tokens: int = 8192
 ) -> Tuple[str, bool]:
-    """Qwen reviews and fixes the draft JSON on NVIDIA - fast ~10-30s"""
+    """MiniMax reviews and fixes the draft JSON on NVIDIA - fast ~10-30s"""
     model = MODELS["review"]
     
     review_system = f"""You are a JSON corrector. Fix ONLY errors, keep correct parts AS-IS.
@@ -99,10 +99,10 @@ Respond with ONLY corrected JSON:"""
         corrected = completion.choices[0].message.content
         corrected = repair_json(corrected)
         was_fixed = corrected.strip() != draft.strip()
-        logger.info(f"Qwen review: {len(corrected)} chars in {time.time()-t0:.1f}s, was_fixed={was_fixed}")
+        logger.info(f"MiniMax review: {len(corrected)} chars in {time.time()-t0:.1f}s, was_fixed={was_fixed}")
         return corrected, was_fixed
     except Exception as e:
-        logger.warning(f"Qwen review failed: {e}")
+        logger.warning(f"MiniMax review failed: {e}")
         return draft, False
 
 def repair_json(text: str) -> str:
